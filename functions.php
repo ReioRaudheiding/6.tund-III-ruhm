@@ -1,6 +1,6 @@
 <?php
 	
-	// Loon AB'i �henduse
+	// Loon AB'i ühenduse
 	require_once("../config_global.php");
 	$database = "if15_reiorau";
 	
@@ -8,26 +8,76 @@
 		
 		$mysqli = new mysqli($GLOBALS["servername"], $GLOBALS["server_username"], $GLOBALS["server_password"], $GLOBALS["database"]);
 		
-		$stmt = $mysqli->prepare("SELECT id, user_id, number_plate, color from car_plates");
+		$stmt = $mysqli->prepare("SELECT id, user_id, number_plate, color from car_plates WHERE deleted IS NULL ");
 		$stmt->bind_result($id, $user_id_from_database, $number_plate, $color);
 		$stmt->execute();
 		
-		$row = 0;
+		// tekitan tühja massiivi, kus edaspidi hoida objekte
+		$car_array = array();
 		
-		//tee midagi seni, kuni saame ab'ist �he rea andmeid
+		
+		//tee midagi seni, kuni saame ab'ist ühe rea andmeid
 		while($stmt->fetch()){
 			//seda siin sees tehakse nii mitu korda kui siin on ridu
-			echo $row." ".$number_plate." ".$color."<br>";
-			$row += 1;
+			//echo $row." ".$number_plate." ".$color."<br>";
 			
+			//tekitan objekti, kus hakkan hoidma väärtusi
+			$car = new StdClass();
+			$car->id = $id;
+			$car->plate = $number_plate;
+			$car->color = $color;
+			$car->user_id = $user_id_from_database;
 			
+			//lisan massiivi ühr rea juurde
+			array_push($car_array, $car);
+			//var dump ütleb muutuja tüübi ja sisu
+			//echo "<pre>";
+			//var_dump($car_array);
+			//echo"</pre><br>";
+			
+		}
+		
+		//tagastan massiivi
+		return $car_array;
+		
+		$stmt->close();
+		$mysqli->close();
+	}
+	
+	function deleteCar($id){
+		
+		$mysqli = new mysqli ($GLOBALS["servername"], $GLOBALS["server_username"], $GLOBALS["server_password"], $GLOBALS["database"]);
+		
+		$stmt = $mysqli->prepare("UPDATE car_plates SET deleted=NOW() WHERE id=?");
+		$stmt->bind_param("i", $id);
+		if($stmt->execute()){
+			// sai kustutatud
+			// kustutame aadressirea tühjaks
+			header("Location: table.php");
 		}
 		
 		$stmt->close();
 		$mysqli->close();
 	}
 	
-	//k�ivitab funktsiooni
-	getCarData();
+	function updateCar($id, $number_plate, $color){
+		
+		$mysqli = new mysqli($GLOBALS["servername"], $GLOBALS["server_username"], $GLOBALS["server_password"], $GLOBALS["database"]);
+		
+		$stmt = $mysqli->prepare("UPDATE car_plates SET number_plate=?, color=? WHERE id=?");
+		$stmt->bind_param("ssi", $number_plate, $color, $id);
+		
+		if($stmt->execute()){
+			// sai kustutatud
+			// kustutame aadressirea tühjaks
+			header("Location: table.php");
+		}
+		
+		$stmt->close();
+		$mysqli->close();
+	}
+	
+	//käivitab funktsiooni
+	//$array_of_cars = getCarData();
 	
 ?>
